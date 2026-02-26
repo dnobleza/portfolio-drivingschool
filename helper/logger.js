@@ -13,4 +13,5 @@ exports.logger = {
     error: (tag, message) => {
         console.error(formatMessage("ERROR", tag, message));
     }
+    
 };
