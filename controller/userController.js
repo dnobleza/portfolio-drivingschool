@@ -145,3 +145,74 @@ exports.updateUser = async (req, res) => {
         });
     }
 };
+
+exports.login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                code: responseCode.VALIDATION_ERROR,
+                message: "Email and password are required"
+            });
+        }
+
+        const [rows] = await users.findUserByEmail(email);
+
+        if (rows.length === 0) {
+            return res.status(401).json({
+                code: responseCode.INVALID_CREDENTIALS,
+                message: "Invalid credentials"
+            });
+        }
+
+        const user = rows[0];
+
+        // Check if account is locked
+        if (user.lock_until && new Date(user.lock_until) > new Date()) {
+            return res.status(403).json({
+                code: responseCode.UNAUTHORIZED,
+                message: "Account locked. Try again later."
+            });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            await users.incrementFailedLogin(email);
+
+            if (user.failed_login_attempts + 1 >= 5) {
+                await users.lockAccount(email);
+                return res.status(403).json({
+                    code: responseCode.UNAUTHORIZED,
+                    message: "Account locked for 5 minutes due to multiple failed attempts"
+                });
+            }
+
+            return res.status(401).json({
+                code: responseCode.INVALID_CREDENTIALS,
+                message: "Invalid credentials"
+            });
+        }
+
+        await users.resetFailedLogin(email);
+
+        const token = jwt.sign(
+            { uuid: user.uuid, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
+
+        return res.status(200).json({
+            code: responseCode.SUCCESS,
+            message: "Login successful",
+            token
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            code: responseCode.ERROR,
+            message: "Internal server error"
+        });
+    }
+};
