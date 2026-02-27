@@ -33,3 +33,15 @@ exports.updateUser = async (uuid, data) => {
         [name, mobile_number, address, role, uuid]
     );
 };
+
+exports.incrementFailedLogin = async (email) => {
+    return db.query(`UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE email = ?`, [email]);
+};
+
+exports.lockAccount = async (email) => {
+    return db.query(`UPDATE users SET lock_until = DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE email = ?`,[email]);
+};
+
+exports.resetFailedLogin = async (email) => {
+    return db.query(`UPDATE users SET failed_login_attempts = 0, lock_until = NULL WHERE email = ?`,[email]);
+};
