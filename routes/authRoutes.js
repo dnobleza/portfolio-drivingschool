@@ -11,4 +11,6 @@ router.get("/users/:email", authController.findUserByEmail);
 router.get("/users", authController.getAllUsers);
 router.put("/users/:uuid", authController.updateUser);
 
+
+
 module.exports = router;
