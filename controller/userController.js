@@ -5,6 +5,7 @@ const { validateRegister } = require("../helper/regex");
 const { responseCode } = require("../helper/responseCode");
 const { logger } = require("../helper/logger");
 const { sendAccountLockEmail } = require("../helper/emailService");
+const jwt = require("jsonwebtoken");
  
 const TAG = "DRIVING-SCHOOL";
 
@@ -219,6 +220,25 @@ exports.login = async (req, res) => {
             code: responseCode.SUCCESS,
             message: "Login successful",
             token
+        });
+
+    } catch (error) {
+        console.error("LOGIN ERROR:", error);
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+exports.adminUnlockUser = async (req, res) => {
+    try {
+        const { uuid } = req.params;
+
+        await users.adminUnlockAccount(uuid);
+
+        return res.status(200).json({
+            code: responseCode.SUCCESS,
+            message: "User account unlocked successfully"
         });
 
     } catch (error) {
