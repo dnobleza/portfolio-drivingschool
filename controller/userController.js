@@ -4,7 +4,8 @@ const users = require("../config/user");
 const { validateRegister } = require("../helper/regex");
 const { responseCode } = require("../helper/responseCode");
 const { logger } = require("../helper/logger");
-
+const { sendAccountLockEmail } = require("../helper/emailService");
+ 
 const TAG = "DRIVING-SCHOOL";
 
 exports.register = async (req, res) => {
@@ -178,22 +179,33 @@ exports.login = async (req, res) => {
 
         const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) {
-            await users.incrementFailedLogin(email);
+       if (!isMatch) {
 
-            if (user.failed_login_attempts + 1 >= 5) {
-                await users.lockAccount(email);
-                return res.status(403).json({
-                    code: responseCode.UNAUTHORIZED,
-                    message: "Account locked for 5 minutes due to multiple failed attempts"
-                });
-            }
+    const newAttempts = user.failed_login_attempts + 1;
 
-            return res.status(401).json({
-                code: responseCode.INVALID_CREDENTIALS,
-                message: "Invalid credentials"
-            });
+    await users.incrementFailedLogin(email);
+
+    if (newAttempts >= 5) {
+        await users.lockAccount(email);
+
+        try {
+            await sendAccountLockEmail(user.email);
+            console.log("Email sent to:", user.email);
+        } catch (emailError) {
+            console.error("Email sending failed:", emailError);
         }
+
+        return res.status(403).json({
+            code: responseCode.UNAUTHORIZED,
+            message: "Account locked for 5 minutes due to multiple failed attempts"
+        });
+    }
+
+    return res.status(401).json({
+        code: responseCode.INVALID_CREDENTIALS,
+        message: "Invalid credentials"
+    });
+}
 
         await users.resetFailedLogin(email);
 
@@ -216,3 +228,4 @@ exports.login = async (req, res) => {
         });
     }
 };
+
