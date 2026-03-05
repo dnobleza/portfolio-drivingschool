@@ -9,17 +9,17 @@ app.use(cors());
 app.use(express.json());
 
 const authRoutes = require('./routes/authRoutes');
-app.use("/api/driving-school/v1", authRoutes);
+const instructorRoutes = require("./routes/instructors");
+const bookingRoutes = require("./routes/booking");
+const packageRoutes = require("./routes/packages");
 
-app.get("/test-email", async (req, res) => {
-    try {
-        await sendAccountLockEmail("danerwinnobleza@gmail.com");
-        res.send("Email sent");
-    } catch (err) {
-        console.error(err);
-        res.send("Email failed");
-    }
-});
+
+app.use("/api/instructors", instructorRoutes);
+app.use("/api/driving-school/v1", authRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/packages", packageRoutes);
+
+
 
 const PORT = process.env.PORT || 3000;
 
