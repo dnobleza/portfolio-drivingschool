@@ -47,11 +47,5 @@ exports.resetFailedLogin = async (email) => {
 };
 
 exports.adminUnlockAccount = async (uuid) => {
-    return db.query(
-        `UPDATE users
-         SET failed_login_attempts = 0,
-             lock_until = NULL
-         WHERE uuid = ?`,
-        [uuid]
-    );
+    return db.query(`UPDATE users SET failed_login_attempts = 0, lock_until = NULL WHERE uuid = ?`, [uuid]);
 };
